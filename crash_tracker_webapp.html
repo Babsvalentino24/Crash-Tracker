@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Crash Game Tracker</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#111111" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #111;
+      color: #eee;
+      padding: 20px;
+      max-width: 500px;
+      margin: auto;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    input[type="number"] {
+      width: 100%;
+      padding: 10px;
+      font-size: 18px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      border: none;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      font-size: 18px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #218838;
+    }
+    #log {
+      margin-top: 20px;
+    }
+    .entry {
+      padding: 8px;
+      border-bottom: 1px solid #333;
+    }
+    .spike {
+      color: #ffc107;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h2>Crash Tracker</h2>
+  <input type="number" step="0.01" id="multiplierInput" placeholder="Enter multiplier (e.g., 1.05)" />
+  <button onclick="logMultiplier()">Log Multiplier</button>
+  <div id="log"></div>
+
+  <script>
+    const log = [];
+
+    function logMultiplier() {
+      const input = document.getElementById("multiplierInput");
+      const value = parseFloat(input.value);
+      if (isNaN(value)) return;
+
+      const timestamp = new Date();
+      log.unshift({ value, timestamp });
+      input.value = "";
+      updateLog();
+    }
+
+    function updateLog() {
+      const container = document.getElementById("log");
+      container.innerHTML = "";
+
+      let lowStreak = 0;
+      let lastSpikeTime = null;
+      for (let i = 0; i < log.length; i++) {
+        const entry = log[i];
+        const time = new Date(entry.timestamp).toLocaleTimeString();
+        const isLow = entry.value < 2.00;
+
+        if (isLow) {
+          lowStreak++;
+        } else {
+          lowStreak = 0;
+        }
+
+        let html = `<div class='entry'>${time} - ${entry.value.toFixed(2)}x`;
+        if (entry.value >= 4.00) {
+          html += ` <span class='spike'>(Spike!)</span>`;
+          if (!lastSpikeTime) {
+            lastSpikeTime = entry.timestamp;
+          }
+        }
+        html += `</div>`;
+        container.innerHTML += html;
+      }
+
+      if (lowStreak >= 4) {
+        let estimatedTime = '';
+        if (log.length > 1) {
+          const lastTime = new Date(log[0].timestamp).getTime();
+          const oldestTime = new Date(log[Math.min(4, log.length - 1)].timestamp).getTime();
+          const avgDelay = (lastTime - oldestTime) / Math.min(4, log.length - 1);
+          const predictionTime = new Date(lastTime + avgDelay);
+          estimatedTime = predictionTime.toLocaleTimeString();
+        }
+
+        container.innerHTML = `<div class='entry spike'>⚠️ Likely High Multiplier Incoming Soon! (${lowStreak} lows) ~ ETA: ${estimatedTime}</div>` + container.innerHTML;
+      }
+    }
+
+    // Register Service Worker for PWA
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('sw.js')
+          .then(function (registration) {
+            console.log('ServiceWorker registered with scope:', registration.scope);
+          }, function (err) {
+            console.log('ServiceWorker registration failed:', err);
+          });
+      });
+    }
+  </script>
+</body>
+</html>
