@@ -1,3 +1,33 @@
+let multipliers = JSON.parse(localStorage.getItem('multipliers')) || [];
+
+function logMultiplier() {
+  const input = document.getElementById("multiplierInput");
+  const value = parseFloat(input.value);
+
+  if (!value || value <= 0) {
+    alert("Enter a valid multiplier!");
+    return;
+  }
+
+  multipliers.push(value);
+  if (multipliers.length > 100) multipliers.shift(); // keep recent 100
+  localStorage.setItem("multipliers", JSON.stringify(multipliers));
+
+  input.value = "";
+  updateDisplay();
+}
+
+function updateDisplay() {
+  displayHistory();
+  displayPrediction();
+}
+
+function displayHistory() {
+  const history = document.getElementById("history");
+  const recent = multipliers.slice(-10).reverse();
+  history.innerHTML = recent.map(m => `<li>${m.toFixed(2)}x</li>`).join("");
+}
+
 function displayPrediction() {
   const prediction = document.getElementById("prediction");
   const last5 = multipliers.slice(-5);
@@ -20,3 +50,5 @@ function displayPrediction() {
     prediction.textContent = "⏳ No strong pattern detected.";
   }
 }
+
+updateDisplay();
